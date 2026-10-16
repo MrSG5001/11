@@ -41,7 +41,7 @@
     textarea:focus, input[type="text"]:focus { outline: none; border-color: #38bdf8; }
     .char-counter { font-size: 0.75rem; color: #64748b; text-align: right; margin-bottom: 12px; display: flex; justify-content: space-between; }
 
-    /* Duration Chips (Matching Screenshot) */
+    /* Duration Chips */
     .section-label { font-size: 0.75rem; font-weight: bold; color: #94a3b8; margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
     .chips-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
     .chip { background: #0b0f19; border: 1px solid #263346; color: #f8fafc; padding: 10px 0; text-align: center; border-radius: 8px; font-size: 0.8rem; font-weight: bold; cursor: pointer; transition: 0.15s; }
@@ -53,7 +53,8 @@
 
     input[type="file"] { width: 100%; color: #94a3b8; font-size: 0.8rem; margin-bottom: 12px; }
 
-    #qrcode-temp { display: none; }
+    /* FIXED: Off-screen positioning instead of display:none so canvas renders properly */
+    #qrcode-temp { position: absolute; left: -9999px; top: -9999px; opacity: 0; pointer-events: none; }
   </style>
 </head>
 <body>
@@ -132,7 +133,7 @@
     <button class="btn-send" onclick="sendToOLED()">➤ Send to Screen</button>
   </div>
 
-  <!-- Hidden Container for QRCode Generator Engine -->
+  <!-- Off-screen Container for QRCode Generator Engine -->
   <div id="qrcode-temp"></div>
 
   <script>
@@ -142,8 +143,8 @@
     const CHAR_DRAW    = "4fa1c003-1c4a-43fe-8ce6-a9600f28a30f";
 
     let gattServer, moodChar, textChar, drawChar;
-    let selectedMode = 'text'; // 'text', 'qr', 'photo'
-    let selectedDurationMode = 0; // 0=1 Time, 1=Always, 2=5s, 3=10s
+    let selectedMode = 'text';
+    let selectedDurationMode = 0;
 
     const canvas = document.getElementById("oledPreview");
     const ctx = canvas.getContext("2d");
@@ -159,7 +160,6 @@
       ctx.fillText("[ OLED PREVIEW ]", 64, 36);
     }
 
-    // Bluetooth Scanner (Lenient Mode for Mobile Compatibility)
     async function connectBLE() {
       try {
         document.getElementById("statusText").innerText = "STATUS: Scanning...";
@@ -226,6 +226,7 @@
       ctx.fillText(text || "SG's Pet", 64, 40);
     }
 
+    // FIXED: Synchronous Canvas Generation for QR Code
     function updateQRPreview() {
       const label = document.getElementById("qrLabelInput").value;
       const url = document.getElementById("qrUrlInput").value || "https://instagram.com";
@@ -233,19 +234,26 @@
       const tempContainer = document.getElementById("qrcode-temp");
       tempContainer.innerHTML = "";
 
+      // Generate 56x56 QR code synchronously into DOM canvas
       new QRCode(tempContainer, {
         text: url, width: 56, height: 56,
         colorDark : "#000000", colorLight : "#ffffff",
         correctLevel : QRCode.CorrectLevel.M
       });
 
+      // Synchronous drawing from QR canvas to main preview canvas
       setTimeout(() => {
+        const qrCanvas = tempContainer.querySelector("canvas");
         const qrImg = tempContainer.querySelector("img");
-        if (!qrImg) return;
 
         ctx.fillStyle = "#000000";
         ctx.fillRect(0, 0, 128, 64);
-        ctx.drawImage(qrImg, 4, 4, 56, 56);
+
+        if (qrCanvas) {
+          ctx.drawImage(qrCanvas, 4, 4, 56, 56);
+        } else if (qrImg && qrImg.src) {
+          ctx.drawImage(qrImg, 4, 4, 56, 56);
+        }
 
         ctx.fillStyle = "#ffffff";
         ctx.textAlign = "left";
@@ -253,7 +261,7 @@
         ctx.fillText(label.substring(0, 11), 66, 28);
         ctx.font = "7px sans-serif";
         ctx.fillText("SCAN ME", 66, 42);
-      }, 100);
+      }, 50);
     }
 
     function processPhotoUpload(e) {
