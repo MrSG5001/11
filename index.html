@@ -37,8 +37,8 @@
     canvas#oledPreview { background: #000; border: 1px solid #263346; width: 100%; height: auto; image-rendering: pixelated; }
 
     /* Inputs */
-    textarea, input[type="text"] { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #263346; background: #0b0f19; color: #ffffff; font-size: 0.85rem; margin-bottom: 6px; resize: none; font-family: inherit; }
-    textarea:focus, input[type="text"]:focus { outline: none; border-color: #38bdf8; }
+    textarea, input[type="text"], select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #263346; background: #0b0f19; color: #ffffff; font-size: 0.85rem; margin-bottom: 6px; resize: none; font-family: inherit; }
+    textarea:focus, input[type="text"]:focus, select:focus { outline: none; border-color: #38bdf8; }
     .char-counter { font-size: 0.75rem; color: #64748b; text-align: right; margin-bottom: 12px; display: flex; justify-content: space-between; }
 
     /* Duration Chips */
@@ -51,7 +51,7 @@
     .btn-send { background: #ffffff; color: #0b0f19; border: none; padding: 12px; border-radius: 10px; font-weight: bold; width: 100%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: 0.2s; }
     .btn-send:active { transform: scale(0.98); background: #cbd5e1; }
 
-    input[type="file"] { width: 100%; color: #94a3b8; font-size: 0.8rem; margin-bottom: 12px; }
+    input[type="file"] { width: 100%; color: #94a3b8; font-size: 0.8rem; margin-bottom: 8px; }
 
     /* Off-screen Container for QRCode.js rendering */
     #qrcode-temp { position: absolute; left: -9999px; top: -9999px; width: 60px; height: 60px; }
@@ -115,9 +115,15 @@
       <input type="text" id="qrUrlInput" placeholder="URL (e.g. https://instagram.com)" value="https://instagram.com" oninput="updateQRPreview()">
     </div>
 
-    <!-- SECTION 3: PHOTO UPLOAD -->
+    <!-- SECTION 3: PHOTO UPLOAD & ASPECT OPTIONS -->
     <div id="sectionPhoto" style="display: none;">
-      <input type="file" id="photoInput" accept="image/*" onchange="processPhotoUpload(event)">
+      <input type="file" id="photoInput" accept="image/*" onchange="processPhotoUpload()">
+      <div class="section-label">Photo Fit Mode</div>
+      <select id="photoFitMode" onchange="renderUploadedPhoto()">
+        <option value="crop">Center Crop (Fill Screen - No Distortion)</option>
+        <option value="rotate">Rotate 90° (Portrait Sideways Fit)</option>
+        <option value="fit">Letterbox (Fit Inside - Black Borders)</option>
+      </select>
     </div>
 
     <!-- DISPLAY DURATION CHIPS -->
@@ -147,6 +153,7 @@
 
     let marqueeOffset = 0;
     let animLoopId = null;
+    let currentUploadedImage = null;
 
     const canvas = document.getElementById("oledPreview");
     const ctx = canvas.getContext("2d");
@@ -209,6 +216,7 @@
 
       if (mode === 'text') updateTextPreview();
       else if (mode === 'qr') updateQRPreview();
+      else if (mode === 'photo' && currentUploadedImage) renderUploadedPhoto();
       else clearPreview();
     }
 
@@ -231,7 +239,7 @@
       ctx.fillText(text || "SG's Pet", 64, 42);
     }
 
-    // Crisp Original QRCode.js Rendering + Smooth Continuous Marquee Engine
+    // Crisp QRCode.js + Smooth Continuous Marquee
     function updateQRPreview() {
       if (animLoopId) { cancelAnimationFrame(animLoopId); animLoopId = null; }
 
@@ -241,7 +249,6 @@
       const tempContainer = document.getElementById("qrcode-temp");
       tempContainer.innerHTML = "";
 
-      // Generate sharp 56x56 QR code image
       new QRCode(tempContainer, {
         text: url, width: 56, height: 56,
         colorDark : "#000000", colorLight : "#ffffff",
@@ -257,7 +264,6 @@
         ctx.fillStyle = "#000000";
         ctx.fillRect(0, 0, 128, 64);
 
-        // 1. Draw Crisp QR Code
         ctx.imageSmoothingEnabled = false;
         if (qrCanvas) {
           ctx.drawImage(qrCanvas, 4, 4, 56, 56);
@@ -265,21 +271,18 @@
           ctx.drawImage(qrImg, 4, 4, 56, 56);
         }
 
-        // 2. Draw Subtext ("SCAN ME")
         ctx.fillStyle = "#ffffff";
         ctx.textAlign = "left";
         ctx.font = "bold 8px sans-serif";
         ctx.fillText("SCAN ME", 66, 56);
 
-        // 3. Draw Side Text Label (Larger 15px Bold Monospace Font)
         ctx.font = "bold 15px monospace";
         const textW = ctx.measureText(label).width;
-        const availableW = 58; // x=64 to 122
+        const availableW = 58;
 
         if (textW <= availableW) {
           ctx.fillText(label, 66, 30);
         } else {
-          // Continuous Smooth Running Marquee
           ctx.save();
           ctx.beginPath();
           ctx.rect(64, 0, 64, 44);
@@ -291,7 +294,7 @@
 
           marqueeOffset += 1.2;
           if (marqueeOffset > (124 - 64 + textW)) {
-            marqueeOffset = 0; // Reset loop seamlessly
+            marqueeOffset = 0;
           }
         }
 
@@ -303,32 +306,75 @@
       setTimeout(renderFrame, 60);
     }
 
-    function processPhotoUpload(e) {
-      if (animLoopId) { cancelAnimationFrame(animLoopId); animLoopId = null; }
-      const file = e.target.files[0];
+    // Photo Upload Handler with Orientation & Fit Logic
+    function processPhotoUpload() {
+      const fileInput = document.getElementById("photoInput");
+      const file = fileInput.files[0];
       if (!file) return;
 
       const reader = new FileReader();
       reader.onload = function(evt) {
         const img = new Image();
         img.onload = function() {
-          ctx.fillStyle = "#000000";
-          ctx.fillRect(0, 0, 128, 64);
-          ctx.drawImage(img, 0, 0, 128, 64);
-
-          const imgData = ctx.getImageData(0, 0, 128, 64);
-          for (let i = 0; i < imgData.data.length; i += 4) {
-            const avg = (imgData.data[i] + imgData.data[i+1] + imgData.data[i+2]) / 3;
-            const mono = avg > 120 ? 255 : 0;
-            imgData.data[i] = mono;
-            imgData.data[i+1] = mono;
-            imgData.data[i+2] = mono;
-          }
-          ctx.putImageData(imgData, 0, 0);
+          currentUploadedImage = img;
+          renderUploadedPhoto();
         };
         img.src = evt.target.result;
       };
       reader.readAsDataURL(file);
+    }
+
+    function renderUploadedPhoto() {
+      if (!currentUploadedImage) return;
+      if (animLoopId) { cancelAnimationFrame(animLoopId); animLoopId = null; }
+
+      const mode = document.getElementById("photoFitMode").value;
+      const img = currentUploadedImage;
+
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(0, 0, 128, 64);
+
+      if (mode === "crop") {
+        // Center Crop (Aspect Fill) - Scale and fill 128x64 without distortion
+        const scale = Math.max(128 / img.width, 64 / img.height);
+        const sw = 128 / scale;
+        const sh = 64 / scale;
+        const sx = (img.width - sw) / 2;
+        const sy = (img.height - sh) / 2;
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, 128, 64);
+      } else if (mode === "rotate") {
+        // Rotate 90 degrees for tall portrait photos
+        ctx.save();
+        ctx.translate(64, 32);
+        ctx.rotate(90 * Math.PI / 180);
+
+        const scale = Math.max(64 / img.width, 128 / img.height);
+        const sw = 64 / scale;
+        const sh = 128 / scale;
+        const sx = (img.width - sw) / 2;
+        const sy = (img.height - sh) / 2;
+        ctx.drawImage(img, sx, sy, sw, sh, -32, -64, 64, 128);
+        ctx.restore();
+      } else if (mode === "fit") {
+        // Letterbox Fit (Aspect Fit) - Fits full image inside 128x64 with black borders
+        const scale = Math.min(128 / img.width, 64 / img.height);
+        const dw = img.width * scale;
+        const dh = img.height * scale;
+        const dx = (128 - dw) / 2;
+        const dy = (64 - dh) / 2;
+        ctx.drawImage(img, 0, 0, img.width, img.height, dx, dy, dw, dh);
+      }
+
+      // Convert to Monochrome Pixel Array for OLED
+      const imgData = ctx.getImageData(0, 0, 128, 64);
+      for (let i = 0; i < imgData.data.length; i += 4) {
+        const avg = (imgData.data[i] + imgData.data[i+1] + imgData.data[i+2]) / 3;
+        const mono = avg > 120 ? 255 : 0;
+        imgData.data[i] = mono;
+        imgData.data[i+1] = mono;
+        imgData.data[i+2] = mono;
+      }
+      ctx.putImageData(imgData, 0, 0);
     }
 
     async function sendToOLED() {
