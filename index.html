@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>SG's Pet Controller</title>
-  <!-- Pure JS QR Matrix Generator (Fixes Android Chrome DOM Bugs) -->
+  <!-- Pure JS QR Matrix Generator Engine -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', Courier, monospace, -apple-system, sans-serif; }
@@ -220,12 +220,12 @@
       ctx.fillStyle = "#000000";
       ctx.fillRect(0, 0, 128, 64);
       ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 18px sans-serif";
+      ctx.font = "bold 22px sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText(text || "SG's Pet", 64, 40);
+      ctx.fillText(text || "SG's Pet", 64, 42);
     }
 
-    // Android-Compatible Direct Matrix QR Engine & Auto-Marquee
+    // Direct Matrix QR Engine with 14px Larger Font & Continuous Marquee
     function updateQRPreview() {
       if (qrAnimTimer) { clearInterval(qrAnimTimer); qrAnimTimer = null; }
 
@@ -271,24 +271,22 @@
         ctx.fillStyle = "#ffffff";
         ctx.textAlign = "left";
         ctx.font = "bold 8px sans-serif";
-        ctx.fillText("SCAN ME", 66, 50);
+        ctx.fillText("SCAN ME", 66, 54);
 
-        // 3. Draw Side Text Label (Bigger 11px Monospace Font)
-        ctx.font = "bold 11px monospace";
+        // 3. Draw Side Text Label (Larger 14px Bold Font)
+        ctx.font = "bold 14px monospace";
         const textWidth = ctx.measureText(label).width;
         const availableWidth = 58; // x=66 to 124
 
         if (textWidth <= availableWidth) {
-          // Fits within width: Static center/left
-          ctx.fillText(label, 66, 28);
+          ctx.fillText(label, 66, 30);
         } else {
-          // Exceeds width: Clip right side panel and scroll (marquee)
           ctx.save();
           ctx.beginPath();
-          ctx.rect(64, 0, 62, 38);
+          ctx.rect(64, 0, 62, 42);
           ctx.clip();
 
-          ctx.fillText(label, qrMarqueeX, 28);
+          ctx.fillText(label, qrMarqueeX, 30);
           ctx.restore();
 
           qrMarqueeX -= 1.5;
@@ -300,9 +298,9 @@
 
       renderQRFrame();
 
-      ctx.font = "bold 11px monospace";
+      ctx.font = "bold 14px monospace";
       if (ctx.measureText(label).width > 58) {
-        qrAnimTimer = setInterval(renderQRFrame, 40); // Smooth 25fps marquee loop
+        qrAnimTimer = setInterval(renderQRFrame, 35); // Smooth marquee loop
       }
     }
 
