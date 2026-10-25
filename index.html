@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="mr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>SG's Pet Controller</title>
+  <!-- Google Fonts for Marathi Devanagari Support -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@700&display=swap" rel="stylesheet">
   <!-- Sharp High-Contrast QRCode Engine -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
@@ -37,7 +41,7 @@
     canvas#oledPreview { background: #000; border: 1px solid #263346; width: 100%; height: auto; image-rendering: pixelated; }
 
     /* Inputs */
-    textarea, input[type="text"], select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #263346; background: #0b0f19; color: #ffffff; font-size: 0.85rem; margin-bottom: 6px; resize: none; font-family: inherit; }
+    textarea, input[type="text"], select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #263346; background: #0b0f19; color: #ffffff; font-size: 0.9rem; margin-bottom: 6px; resize: none; font-family: 'Noto Sans Devanagari', -apple-system, sans-serif; }
     textarea:focus, input[type="text"]:focus, select:focus { outline: none; border-color: #38bdf8; }
     .char-counter { font-size: 0.75rem; color: #64748b; text-align: right; margin-bottom: 12px; display: flex; justify-content: space-between; }
 
@@ -100,18 +104,18 @@
       <canvas id="oledPreview" width="128" height="64"></canvas>
     </div>
 
-    <!-- SECTION 1: TEXT MESSAGES -->
+    <!-- SECTION 1: TEXT MESSAGES (Supports Marathi & Emojis) -->
     <div id="sectionText">
-      <textarea id="msgInput" rows="2" placeholder="Type message for SG's Pet..." maxlength="60" oninput="updateTextPreview()"></textarea>
+      <textarea id="msgInput" rows="2" placeholder="टाइप करा / Type message (मराठी & Emojis 😊🚩)" maxlength="60" oninput="updateTextPreview()"></textarea>
       <div class="char-counter">
-        <span>Payload limit: 60 chars</span>
+        <span>Marathi & Emoji Auto-Supported</span>
         <span id="charCount">0/60</span>
       </div>
     </div>
 
     <!-- SECTION 2: SOCIAL QR CODE -->
     <div id="sectionQR" style="display: none;">
-      <input type="text" id="qrLabelInput" placeholder="Label (e.g. @saigo)" value="@saigo" oninput="updateQRPreview()">
+      <input type="text" id="qrLabelInput" placeholder="Label (e.g. @saigo / नमस्कार)" value="@saigo" oninput="updateQRPreview()">
       <input type="text" id="qrUrlInput" placeholder="URL (e.g. https://instagram.com)" value="https://instagram.com" oninput="updateQRPreview()">
     </div>
 
@@ -158,6 +162,9 @@
     const canvas = document.getElementById("oledPreview");
     const ctx = canvas.getContext("2d");
     ctx.imageSmoothingEnabled = false;
+
+    // Font stack supporting Marathi (Devanagari) & Emojis
+    const MULTI_FONT_STACK = "bold 18px 'Noto Sans Devanagari', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif";
 
     clearPreview();
 
@@ -226,6 +233,7 @@
       el.classList.add('active');
     }
 
+    // Live Marathi & Emoji Canvas Renderer
     function updateTextPreview() {
       if (animLoopId) { cancelAnimationFrame(animLoopId); animLoopId = null; }
       const text = document.getElementById("msgInput").value;
@@ -234,12 +242,36 @@
       ctx.fillStyle = "#000000";
       ctx.fillRect(0, 0, 128, 64);
       ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 22px sans-serif";
+      ctx.font = MULTI_FONT_STACK;
       ctx.textAlign = "center";
-      ctx.fillText(text || "SG's Pet", 64, 42);
+      ctx.textBaseline = "middle";
+      ctx.fillText(text || "SG's Pet", 64, 32);
+
+      // Emoji Binarization Engine (Converts colored Emojis into high-contrast monochrome OLED pixels)
+      if (text && /[^\x00-\x7F]/.test(text)) {
+        binarizeCanvasEmojis();
+      }
     }
 
-    // Crisp QRCode.js + Smooth Continuous Marquee
+    function binarizeCanvasEmojis() {
+      const imgData = ctx.getImageData(0, 0, 128, 64);
+      for (let i = 0; i < imgData.data.length; i += 4) {
+        const r = imgData.data[i];
+        const g = imgData.data[i+1];
+        const b = imgData.data[i+2];
+        const a = imgData.data[i+3];
+
+        const brightness = (r * 0.299 + g * 0.587 + b * 0.114);
+        const mono = (a > 50 && brightness > 30) ? 255 : 0;
+
+        imgData.data[i] = mono;
+        imgData.data[i+1] = mono;
+        imgData.data[i+2] = mono;
+        imgData.data[i+3] = mono ? 255 : 0;
+      }
+      ctx.putImageData(imgData, 0, 0);
+    }
+
     function updateQRPreview() {
       if (animLoopId) { cancelAnimationFrame(animLoopId); animLoopId = null; }
 
@@ -273,10 +305,11 @@
 
         ctx.fillStyle = "#ffffff";
         ctx.textAlign = "left";
+        ctx.textBaseline = "alphabetic";
         ctx.font = "bold 8px sans-serif";
         ctx.fillText("SCAN ME", 66, 56);
 
-        ctx.font = "bold 15px monospace";
+        ctx.font = "bold 14px 'Noto Sans Devanagari', monospace";
         const textW = ctx.measureText(label).width;
         const availableW = 58;
 
@@ -306,7 +339,6 @@
       setTimeout(renderFrame, 60);
     }
 
-    // Photo Upload Handler with Orientation & Fit Logic
     function processPhotoUpload() {
       const fileInput = document.getElementById("photoInput");
       const file = fileInput.files[0];
@@ -335,7 +367,6 @@
       ctx.fillRect(0, 0, 128, 64);
 
       if (mode === "crop") {
-        // Center Crop (Aspect Fill) - Scale and fill 128x64 without distortion
         const scale = Math.max(128 / img.width, 64 / img.height);
         const sw = 128 / scale;
         const sh = 64 / scale;
@@ -343,7 +374,6 @@
         const sy = (img.height - sh) / 2;
         ctx.drawImage(img, sx, sy, sw, sh, 0, 0, 128, 64);
       } else if (mode === "rotate") {
-        // Rotate 90 degrees for tall portrait photos
         ctx.save();
         ctx.translate(64, 32);
         ctx.rotate(90 * Math.PI / 180);
@@ -356,7 +386,6 @@
         ctx.drawImage(img, sx, sy, sw, sh, -32, -64, 64, 128);
         ctx.restore();
       } else if (mode === "fit") {
-        // Letterbox Fit (Aspect Fit) - Fits full image inside 128x64 with black borders
         const scale = Math.min(128 / img.width, 64 / img.height);
         const dw = img.width * scale;
         const dh = img.height * scale;
@@ -365,51 +394,50 @@
         ctx.drawImage(img, 0, 0, img.width, img.height, dx, dy, dw, dh);
       }
 
-      // Convert to Monochrome Pixel Array for OLED
-      const imgData = ctx.getImageData(0, 0, 128, 64);
-      for (let i = 0; i < imgData.data.length; i += 4) {
-        const avg = (imgData.data[i] + imgData.data[i+1] + imgData.data[i+2]) / 3;
-        const mono = avg > 120 ? 255 : 0;
-        imgData.data[i] = mono;
-        imgData.data[i+1] = mono;
-        imgData.data[i+2] = mono;
-      }
-      ctx.putImageData(imgData, 0, 0);
+      binarizeCanvasEmojis();
     }
 
+    // Master BLE Sender (Auto-detects Marathi & Emoji to stream raw bitmap array)
     async function sendToOLED() {
+      if (!gattServer || !gattServer.connected) return alert("Connect Bluetooth first!");
+
       if (selectedMode === 'text') {
-        if (!textChar) return alert("Connect Bluetooth first!");
         const text = document.getElementById("msgInput").value;
-        const encoder = new TextEncoder();
-        const textBytes = encoder.encode(text);
+        const hasNonAscii = /[^\x00-\x7F]/.test(text);
 
-        const payload = new Uint8Array(1 + textBytes.length);
-        payload[0] = selectedDurationMode;
-        payload.set(textBytes, 1);
+        if (!hasNonAscii) {
+          // Standard ASCII fast path via textChar
+          const encoder = new TextEncoder();
+          const textBytes = encoder.encode(text);
+          const payload = new Uint8Array(1 + textBytes.length);
+          payload[0] = selectedDurationMode;
+          payload.set(textBytes, 1);
+          await textChar.writeValue(payload);
+          return;
+        }
+      }
 
-        await textChar.writeValue(payload);
-      } else {
-        if (!drawChar) return alert("Connect Bluetooth first!");
-        const imgData = ctx.getImageData(0, 0, 128, 64).data;
-        const buffer = new Uint8Array(1024);
+      // Bitmap Streaming Path for Marathi / Emojis / QR / Photos via drawChar
+      if (!drawChar) return alert("Drawing characteristic not ready!");
 
-        for (let y = 0; y < 64; y++) {
-          for (let x = 0; x < 128; x++) {
-            const idx = (y * 128 + x) * 4;
-            if (imgData[idx] > 100) {
-              const byteIdx = y * 16 + Math.floor(x / 8);
-              buffer[byteIdx] |= (1 << (7 - (x % 8)));
-            }
+      const imgData = ctx.getImageData(0, 0, 128, 64).data;
+      const buffer = new Uint8Array(1024);
+
+      for (let y = 0; y < 64; y++) {
+        for (let x = 0; x < 128; x++) {
+          const idx = (y * 128 + x) * 4;
+          if (imgData[idx] > 100) {
+            const byteIdx = y * 16 + Math.floor(x / 8);
+            buffer[byteIdx] |= (1 << (7 - (x % 8)));
           }
         }
+      }
 
-        for (let chunk = 0; chunk < 8; chunk++) {
-          const payload = new Uint8Array(129);
-          payload[0] = chunk;
-          payload.set(buffer.subarray(chunk * 128, (chunk + 1) * 128), 1);
-          await drawChar.writeValue(payload);
-        }
+      for (let chunk = 0; chunk < 8; chunk++) {
+        const payload = new Uint8Array(129);
+        payload[0] = chunk;
+        payload.set(buffer.subarray(chunk * 128, (chunk + 1) * 128), 1);
+        await drawChar.writeValue(payload);
       }
     }
   </script>
