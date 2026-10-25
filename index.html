@@ -3,16 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>SG's Pet Controller</title>
+  <title>Theo Controller</title>
+  
+  <!-- PWA & Mobile App Settings -->
   <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0b0f19">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0b0f19">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- Google Fonts for Marathi (Devanagari) & Emoji Support -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@700&display=swap" rel="stylesheet">
+  
   <!-- Sharp High-Contrast QRCode Engine -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', Courier, monospace, -apple-system, sans-serif; }
     body { background: #0b0f19; color: #f8fafc; padding: 16px; display: flex; flex-direction: column; align-items: center; -webkit-tap-highlight-color: transparent; }
@@ -66,8 +72,8 @@
 </head>
 <body>
 
-  <div class="screen-title">THEO</div>
-  <div class="screen-subtitle">Made by Sai Gosavi</div>
+  <div class="screen-title">Theo Controller</div>
+  <div class="screen-subtitle">Made by Sai Gosavi | ESP32-C3 Companion Remote</div>
 
   <!-- Bluetooth Connection Bar -->
   <div class="status-bar">
@@ -77,7 +83,7 @@
 
   <!-- Expression Control Card -->
   <div class="card">
-    <div class="card-title">MY MOOD</div>
+    <div class="card-title">My Mood</div>
     <div class="grid-3">
       <button class="face-btn" onclick="sendMood(0)">Hollow</button>
       <button class="face-btn" onclick="sendMood(1)">Happy</button>
@@ -107,9 +113,9 @@
       <canvas id="oledPreview" width="128" height="64"></canvas>
     </div>
 
-    <!-- SECTION 1: TEXT MESSAGES (Supports Marathi & Emojis) -->
+    <!-- SECTION 1: TEXT MESSAGES -->
     <div id="sectionText">
-      <textarea id="msgInput" rows="2" placeholder="Type message to Display" maxlength="60" oninput="updateTextPreview()"></textarea>
+      <textarea id="msgInput" rows="2" placeholder="टाइप करा / Type message (मराठी & Emojis 😊🚩)" maxlength="60" oninput="updateTextPreview()"></textarea>
       <div class="char-counter">
         <span>Marathi & Emoji Auto-Supported</span>
         <span id="charCount">0/60</span>
@@ -118,11 +124,11 @@
 
     <!-- SECTION 2: SOCIAL QR CODE -->
     <div id="sectionQR" style="display: none;">
-      <input type="text" id="qrLabelInput" placeholder="Label (e.g. @saigo / नमस्कार)" value="saiii" oninput="updateQRPreview()">
-      <input type="text" id="qrUrlInput" placeholder="URL (e.g. https://instagram.com/saigosavi__501)" value="https://instagram.com/saigosavi__501" oninput="updateQRPreview()">
+      <input type="text" id="qrLabelInput" placeholder="Label (e.g. @saigo / नमस्कार)" value="@saigo" oninput="updateQRPreview()">
+      <input type="text" id="qrUrlInput" placeholder="URL (e.g. https://instagram.com)" value="https://instagram.com" oninput="updateQRPreview()">
     </div>
 
-    <!-- SECTION 3: PHOTO UPLOAD & ASPECT OPTIONS -->
+    <!-- SECTION 3: PHOTO UPLOAD -->
     <div id="sectionPhoto" style="display: none;">
       <input type="file" id="photoInput" accept="image/*" onchange="processPhotoUpload()">
       <div class="section-label">Photo Fit Mode</div>
@@ -166,7 +172,6 @@
     const ctx = canvas.getContext("2d");
     ctx.imageSmoothingEnabled = false;
 
-    // Font stack supporting Marathi (Devanagari) & Emojis
     const MULTI_FONT_STACK = "bold 18px 'Noto Sans Devanagari', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif";
 
     clearPreview();
@@ -201,7 +206,7 @@
 
         document.getElementById("statusText").innerText = "STATUS: Connected";
         document.getElementById("statusText").style.color = "#4ade80";
-        document.getElementById("connBtn").innerText = "Connected";
+        document.getElementById("connBtn").innerText = "CONNECTED";
       } catch (err) {
         console.error(err);
         document.getElementById("statusText").innerText = "STATUS: Failed";
@@ -236,7 +241,6 @@
       el.classList.add('active');
     }
 
-    // Live Marathi & Emoji Canvas Renderer
     function updateTextPreview() {
       if (animLoopId) { cancelAnimationFrame(animLoopId); animLoopId = null; }
       const text = document.getElementById("msgInput").value;
@@ -248,9 +252,8 @@
       ctx.font = MULTI_FONT_STACK;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(text || "SG's Pet", 64, 32);
+      ctx.fillText(text || "Theo", 64, 32);
 
-      // Emoji Binarization Engine (Converts colored Emojis into high-contrast monochrome OLED pixels)
       if (text && /[^\x00-\x7F]/.test(text)) {
         binarizeCanvasEmojis();
       }
@@ -278,8 +281,8 @@
     function updateQRPreview() {
       if (animLoopId) { cancelAnimationFrame(animLoopId); animLoopId = null; }
 
-      const label = document.getElementById("qrLabelInput").value || "SaiGosavi";
-      const url = document.getElementById("qrUrlInput").value || "https://www.instagram.com/saigosavi__501";
+      const label = document.getElementById("qrLabelInput").value || "@saigo";
+      const url = document.getElementById("qrUrlInput").value || "https://instagram.com";
 
       const tempContainer = document.getElementById("qrcode-temp");
       tempContainer.innerHTML = "";
@@ -312,7 +315,7 @@
         ctx.font = "bold 8px sans-serif";
         ctx.fillText("SCAN ME", 66, 56);
 
-        ctx.font = "bold 14px 'Noto Sans Devanagari', monospace";
+        ctx.font = "bold 15px 'Noto Sans Devanagari', monospace";
         const textW = ctx.measureText(label).width;
         const availableW = 58;
 
@@ -400,7 +403,6 @@
       binarizeCanvasEmojis();
     }
 
-    // Master BLE Sender (Auto-detects Marathi & Emoji to stream raw bitmap array)
     async function sendToOLED() {
       if (!gattServer || !gattServer.connected) return alert("Connect Bluetooth first!");
 
@@ -409,7 +411,6 @@
         const hasNonAscii = /[^\x00-\x7F]/.test(text);
 
         if (!hasNonAscii) {
-          // Standard ASCII fast path via textChar
           const encoder = new TextEncoder();
           const textBytes = encoder.encode(text);
           const payload = new Uint8Array(1 + textBytes.length);
@@ -420,7 +421,6 @@
         }
       }
 
-      // Bitmap Streaming Path for Marathi / Emojis / QR / Photos via drawChar
       if (!drawChar) return alert("Drawing characteristic not ready!");
 
       const imgData = ctx.getImageData(0, 0, 128, 64).data;
@@ -442,6 +442,13 @@
         payload.set(buffer.subarray(chunk * 128, (chunk + 1) * 128), 1);
         await drawChar.writeValue(payload);
       }
+    }
+  </script>
+
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/11/sw.js');
     }
   </script>
 </body>
