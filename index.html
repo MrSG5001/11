@@ -63,18 +63,18 @@
 </head>
 <body>
 
-  <div class="screen-title">SG's Pet</div>
-  <div class="screen-subtitle">ESP32-C3 Animated Companion Remote</div>
+  <div class="screen-title">THEO</div>
+  <div class="screen-subtitle">Made by Sai Gosavi</div>
 
   <!-- Bluetooth Connection Bar -->
   <div class="status-bar">
     <div class="status-text" id="statusText">STATUS: Offline</div>
-    <button class="btn-connect" onclick="connectBLE()" id="connBtn">Connect BLE</button>
+    <button class="btn-connect" onclick="connectBLE()" id="connBtn">STATUS: ONLINE</button>
   </div>
 
   <!-- Expression Control Card -->
   <div class="card">
-    <div class="card-title">Expression Selection</div>
+    <div class="card-title">MY MOOD</div>
     <div class="grid-3">
       <button class="face-btn" onclick="sendMood(0)">Hollow</button>
       <button class="face-btn" onclick="sendMood(1)">Happy</button>
@@ -90,7 +90,7 @@
 
   <!-- OLED Messages & Media Composer Card -->
   <div class="card">
-    <div class="card-title">OLED Message Composer</div>
+    <div class="card-title">Message Composer</div>
 
     <!-- Mode Selector Tabs -->
     <div class="tab-bar">
@@ -106,7 +106,7 @@
 
     <!-- SECTION 1: TEXT MESSAGES (Supports Marathi & Emojis) -->
     <div id="sectionText">
-      <textarea id="msgInput" rows="2" placeholder="टाइप करा / Type message (मराठी & Emojis 😊🚩)" maxlength="60" oninput="updateTextPreview()"></textarea>
+      <textarea id="msgInput" rows="2" placeholder="Type message to Display" maxlength="60" oninput="updateTextPreview()"></textarea>
       <div class="char-counter">
         <span>Marathi & Emoji Auto-Supported</span>
         <span id="charCount">0/60</span>
@@ -275,8 +275,8 @@
     function updateQRPreview() {
       if (animLoopId) { cancelAnimationFrame(animLoopId); animLoopId = null; }
 
-      const label = document.getElementById("qrLabelInput").value || "@saigo";
-      const url = document.getElementById("qrUrlInput").value || "https://instagram.com";
+      const label = document.getElementById("qrLabelInput").value || "SaiGosavi";
+      const url = document.getElementById("qrUrlInput").value || "https://www.instagram.com/saigosavi__501";
 
       const tempContainer = document.getElementById("qrcode-temp");
       tempContainer.innerHTML = "";
